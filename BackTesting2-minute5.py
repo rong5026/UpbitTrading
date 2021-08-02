@@ -11,9 +11,8 @@ import matplotlib.pyplot as plt
 
 
 cnt = 9000#받아올 데이터 수
-coinlist =["KRW-MLK","KRW-EOS","KRW-STMX"]
-    #["KRW-AQT","KRW-CBK","KRW-XEM","KRW-STX","KRW-AXS","KRW-UPP","KRW-DAWN","KRW-BORA"]
-#["KRW-AXS","KRW-FLOW","KRW-SAND","KRW-XRP","KRW-DOGE","KRW-ETC","KRW-ETH","KRW-BTC", "KRW-XLM","KRW-SNT","KRW-MLK","KRW-WAVES"]
+coinlist =["KRW-MLK","KRW-BORA","KRW-XEM","KRW-SC","KRW-BCHA","KRW-ETH","KRW-MED","KRW-BTC","KRW-LSK","KRW-ETC","KRW-REP","KRW-XRP","KRW-FLOW","KRW-DOGE","KRW-STRK","KRW-SXP","KRW-DOT","KRW-UPP","KRW-ANKR","KRW-ELF","KRW-SAND","KRW-BTT"]
+
 setTime = "minute5"
 
 # 이전 데이터를 엑셀파일에 저장하는 방법2
@@ -138,7 +137,8 @@ for j in range(len(coinlist)):
     # plt.plot(x_values)
     # plt.show()
 
-    df.to_excel(coinlist[j]+".xlsx")
+    #df.to_excel(coinlist[j]+".xlsx")
+
 
 
 
