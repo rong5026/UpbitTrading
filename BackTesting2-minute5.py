@@ -78,13 +78,13 @@ for j in range(len(coinlist)):
     count = 0  # 거래횟수
     wincount = 0  # 이득인거래수
 
-    target_per = 1.02
-    target_buyRSI = 30
+    target_per = 1.1
+    target_buyRSI = 20
     target_sellRSI = 70
 
     for i, row in df.iterrows():
 
-        if row['rsi'] != None and row['low'] <= row['lower'] and buy == False:
+        if row['rsi'] != None and row['rsi'] <= target_buyRSI and buy == False:
             buy = True
             count += 1
             buyprice =row['lower']
@@ -92,21 +92,10 @@ for j in range(len(coinlist)):
             # print("나는 이가격에 샀다 : ",buyprice)
 
 
-        elif row['rsi'] != None and  buy == True and ( row['high'] >buyprice*target_per or
-                                                      row['low']<buyprice*0.982 or
-                                                      row['high']>row['upper'] ):
+        elif row['rsi'] != None and  buy == True and row['high'] >= buyprice*target_per:
 
 
-            if row['high'] >= buyprice * target_per :
-
-                sellprice = buyprice * target_per
-
-            elif row['high'] >= row['upper']:
-                sellprice = row['upper']
-
-            else:
-                sellprice = buyprice*0.982
-
+            sellprice = buyprice*target_per
 
 
 
