@@ -1,5 +1,7 @@
 # 볼린저밴드의 하단값에 닿으면 매수, 2프로 수익을 내거나 볼린저배드 상단에 닿거나, -1.8프로 손실이나면 매도하는 백태스팅
 # 2021-08-02 17:00 추가 - while문을 돌려 target_per의 값을 바꾸며 가장 결과가 좋은 값을 찾아냄
+# 2021- 08-03 16:00 추가 - 볼린저의 값에 따라 백테스팅 2~3 까지 범위로 테스트
+
 import pprint
 
 import pyupbit
@@ -12,24 +14,18 @@ import matplotlib.pyplot as plt
 
 
 cnt = 9000#받아올 데이터 수
-coinlist =["KRW-SC"]
-#["KRW-MLK","KRW-BORA","KRW-XEM","KRW-SC","KRW-BCHA","KRW-ETH","KRW-MED","KRW-BTC","KRW-LSK","KRW-ETC","KRW-REP","KRW-XRP","KRW-FLOW","KRW-DOGE","KRW-STRK","KRW-SXP","KRW-DOT","KRW-UPP","KRW-ANKR","KRW-ELF","KRW-SAND","KRW-BTT"]
+coinlist =["KRW-DOGE"]
+
 setTime = "minute5"
 
-print(len(coinlist))
+bollinger_num = 2
 
-maxper = 0
-maxtarget=1.01
-target_per = 1.01
+maxper =0
+result_bollinger = 2
 
-
-while target_per <=1.03:
-
-    target_sellper = 0.982
-
+while bollinger_num <=3.1:
     for j in range(len(coinlist)):
 
-        # df = pyupbit.get_ohlcv(coinlist[j],interval=setTime, count=00)
         date = None
         dfs = []
 
@@ -55,7 +51,8 @@ while target_per <=1.03:
         df['rsi'] = rsi14
 
         # 볼린저밴드 저장
-        upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
+        # upper, middle, lower = talib.BBANDS(df['close'], timeperiod=10, nbdevup=0.5, nbdevdn=0.5)
+        upper, middle, lower = talib.BBANDS(df['close'], 20, bollinger_num)
         df['upper'] = upper
         df['middle'] = middle
         df['lower'] = lower
@@ -66,13 +63,15 @@ while target_per <=1.03:
 
         # 총 손익
         asset = []
+
         per = 1
 
         count = 0  # 거래횟수
         wincount = 0  # 이득인거래수
 
-        #조건 RSI
-        target_buyRSI = 30
+        target_per = 1.02
+        target_sellper = 0.982
+        target_buyRSI = 20
         target_sellRSI = 70
 
         for i, row in df.iterrows():
@@ -80,30 +79,28 @@ while target_per <=1.03:
             if row['rsi'] != None and row['low'] <= row['lower'] and buy == False:
                 buy = True
                 count += 1
-                buyprice = row['lower']
+                buyprice = (int)(row['lower'] * 10) / 10.0
                 myasset = 0.9995 * myasset
 
 
+            elif row['rsi'] != None and buy == True and (row['high'] >= buyprice * target_per or
+                                                         row['low'] <= buyprice * target_sellper or
+                                                         row['high'] >= row['upper']):
 
-            elif row['rsi'] != None and buy == True and (row['high'] > buyprice * target_per or
-                                                         row['low'] < buyprice * target_sellper or
-                                                         row['high'] > row['upper']):
+                if row['low'] <= buyprice * target_sellper:
 
-                if row['high'] >= buyprice * target_per:
-
-                    sellprice = buyprice * target_per
+                    sellprice = buyprice * target_sellper
 
                 elif row['high'] >= row['upper']:
-                    sellprice = row['upper']
+                    sellprice = (int)(row['upper'] * 10) / 10.0
 
                 else:
-                    sellprice = buyprice * target_sellper
+                    sellprice = buyprice * target_per
 
                 myasset = myasset * (1 + (sellprice - buyprice) / buyprice)
                 myasset -= myasset * 0.0005
 
                 asset.append(myasset)
-
 
                 buy = False
                 per = per * (1 + (sellprice - buyprice) / buyprice - 0.001)
@@ -113,24 +110,32 @@ while target_per <=1.03:
 
 
         print("----------------------------------------------┐")
-        print("target_per:", target_per)
+        print("num :", bollinger_num)
         print("거래 코인 : ", coinlist[j], " 거래분봉 : ", setTime)
         print("퍼센트 : ", per)
+        print("내 자산 : ", myasset)
+        print("거래 수 :", count)
         print("이득 :", wincount, " 손해:", count - wincount)
         print("----------------------------------------------┘")
 
+        # x_values = asset
+        #
+        # plt.plot(x_values)
+        # plt.show()
 
-        #추가
-        if per >=maxper:
+        df.to_excel(coinlist[j] + ".xlsx")
+
+
+
+        #8/3 추가
+
+        if maxper < per:
             maxper = per
-            maxtarget = target_per
+            result_bollinger = bollinger_num
 
-        target_per+=0.002
-
-
+        bollinger_num+=0.2
 
 
+print("가장 best 볼린저값: ",result_bollinger, "그 결과 퍼센트:",maxper )
 
-print("가장 결과가 좋은 값:", maxtarget)
-print("결과 이득: ",maxper)
 

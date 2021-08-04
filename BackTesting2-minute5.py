@@ -12,10 +12,10 @@ from pandas import  DataFrame
 import matplotlib.pyplot as plt
 
 
-cnt = 90#받아올 데이터 수
-coinlist =["KRW-SC"]
+cnt = 45000#받아올 데이터 수
+coinlist =["KRW-XRP"]
 
-setTime = "minute5"
+setTime = "minute1"
 
 # 이전 데이터를 엑셀파일에 저장하는 방법2
 # dfs=[]
@@ -80,8 +80,8 @@ for j in range(len(coinlist)):
     count = 0  # 거래횟수
     wincount = 0  # 이득인거래수
 
-    target_per = 1.02
-    target_sellper = 0.982
+    target_per = 1.03
+    target_sellper = 0.98
     target_buyRSI = 20
     target_sellRSI = 70
 
@@ -118,7 +118,7 @@ for j in range(len(coinlist)):
             if sellprice - buyprice > 0:
                 wincount += 1
 
-            print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
+            #print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
 
 
     print("----------------------------------------------┐")
