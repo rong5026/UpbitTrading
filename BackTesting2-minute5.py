@@ -1,6 +1,8 @@
 # 볼린저밴드의 하단값에 닿으면 매수, 2프로 수익을 내거나 볼린저배드 상단에 닿거나, -1.8프로 손실이나면 매도하는 백태스팅
 
 # 2021-08-02 수정할점 : 산가격과 판가격이 볼린저값으로 들어가서 14.1111123 이렇게 되는거 고침
+
+# 2021-08-03 수정할점 : 산가격과 판가격이 코인상관없이 소수점1자리까지 나타내는거 고쳐야함
 import pprint
 
 import pyupbit
@@ -12,10 +14,10 @@ from pandas import  DataFrame
 import matplotlib.pyplot as plt
 
 
-cnt = 45000#받아올 데이터 수
-coinlist =["KRW-XRP"]
+cnt = 9000#받아올 데이터 수
+coinlist =["KRW-DOGE"]
 
-setTime = "minute1"
+setTime = "minute5"
 
 # 이전 데이터를 엑셀파일에 저장하는 방법2
 # dfs=[]
@@ -90,7 +92,7 @@ for j in range(len(coinlist)):
         if row['rsi'] != None and row['low'] <= row['lower'] and buy == False:
             buy = True
             count += 1
-            buyprice =(int)(row['lower']*10)/10.0
+            buyprice =(int)(( row['lower']*100)/100.0)
             myasset = 0.9995 * myasset
 
 
@@ -103,7 +105,7 @@ for j in range(len(coinlist)):
                 sellprice = buyprice * target_sellper
 
             elif row['high'] >= row['upper']:
-                sellprice = (int)(row['upper']*10)/10.0
+                sellprice = (int)((row['upper']*100)/100.0)
 
             else:
                 sellprice = buyprice * target_per
@@ -118,7 +120,7 @@ for j in range(len(coinlist)):
             if sellprice - buyprice > 0:
                 wincount += 1
 
-            #print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
+            print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice, "팔때 볼린저",row['upper'])
 
 
     print("----------------------------------------------┐")

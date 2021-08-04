@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 
 cnt = 45000#받아올 데이터 수
-coinlist =["KRW-DOGE","KRW-PLA","KRW-ADA"]
+coinlist =["KRW-DOGE","KRW-XRP","KRW-ADA","KRW-AXS"]
 result ={}
 
 setTime = "minute1"
@@ -72,7 +72,7 @@ def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRS
             if sellprice - buyprice > 0:
                 wincount += 1
 
-            # print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
+            print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
 
     print("----------------------------------------------┐")
     print("거래 코인 : ", coinlist,"target_per:",target_per, "target_sellper:",target_sellper)
