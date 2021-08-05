@@ -102,7 +102,7 @@ while True:
 
             ticker = findTicker(coinlist)
 
-            buy_result = upbit.buy_market_order(ticker, krw * 0.9995)  # B
+            buy_result = upbit.buy_market_order(ticker, upbit.get_balance("KRW") * 0.9995)  # B
             print("Coin Founded!")
             print()
 
@@ -121,10 +121,11 @@ while True:
             if price < buy_price*target_per:
                 price +=size
 
-            sell = upbit.sell_limit_order(coinlist, price, (krw * 0.9995)/price)   # limitorder . price , count
+            sell = upbit.sell_limit_order(coinlist, price, balance[0][1]['locked'])   # limitorder . price , count
 
             print("@@@ LIMIT SEll ORDER @@@")
-            print("Coin Name : ",ticker, "Limit Sell Price :",price )
+            print("Coin Name : ",ticker)
+            print("Limit Sell Price :",price )
             print("uuid :",sell[0]['uuid'])
 
 
