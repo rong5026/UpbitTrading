@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 
 cnt = 9000#받아올 데이터 수
-coinlist =["KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
+coinlist =["KRW-ADA","KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
 
 setTime = "minute5"
 
@@ -133,11 +133,13 @@ for j in range(len(coinlist)):
 
             elif row['high'] >= buyprice * target_per:
 
-                sellprice = (int(buyprice * target_per / size)) * size  # 8/5 수정
-
+                if buyprice * target_per%size ==0:
+                    sellprice = (int(buyprice * target_per / size)) * size  # 8/5 수정
+                else:
+                    sellprice = (int(buyprice * target_per / size)) * size +size
 
             else:
-                sellprice = (int(row['upper'] / size)) * size + size  # 8/5 수정
+                sellprice = (int(row['upper'] / size)) * size  # 8/5 수정
 
 
             myasset = myasset * (1 + (sellprice - buyprice) / buyprice)

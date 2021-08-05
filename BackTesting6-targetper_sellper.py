@@ -12,11 +12,11 @@ from pandas import  DataFrame
 import matplotlib.pyplot as plt
 
 
-cnt = 45000#받아올 데이터 수
-coinlist =["KRW-DOGE","KRW-XRP","KRW-ADA","KRW-AXS"]
+cnt = 9000#받아올 데이터 수
+coinlist =["KRW-DOGE","KRW-XRP","KRW-ADA","KRW-AXS","KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
 result ={}
 
-setTime = "minute1"
+setTime = "minute5"
 
 # 이전 데이터를 엑셀파일에 저장하는 방법2
 # dfs=[]
@@ -30,6 +30,27 @@ setTime = "minute1"
 #
 # df= pd.concat(dfs).sort_index()
 
+def getsize(coinlist):
+    current = pyupbit.get_current_price(coinlist)
+
+    if current >=2000000:
+        return 1000
+    elif current>=1000000:
+        return 500
+    elif current>=500000:
+        return 100
+    elif current>=100000:
+        return 50
+    elif current>=10000:
+        return 10
+    elif current>=1000:
+        return 5
+    elif current>=100:
+        return 1
+    elif current>=10:
+        return 0.1
+    else:
+        return 0.01
 
 def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRSI):
 
@@ -42,6 +63,7 @@ def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRS
 
     count = 0  # 거래횟수
     wincount = 0  # 이득인거래수
+    size = getsize(coinlist)
 
     for i, row in df.iterrows():
 
@@ -49,7 +71,7 @@ def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRS
         if row['rsi'] != None and row['low'] <= row['lower'] and buy == False:
             buy = True
             count += 1
-            buyprice = (int)(row['lower'] * 10) / 10.0
+            buyprice = (int(row['lower'] / size)) * size
 
         #구매를 했으며 볼린저 상단에 닿거나, target_sellper 보다 가격이 낮아지거나, target_per 만큼 상승했다면 매도주문
         elif row['rsi'] != None and buy == True and (row['high'] >= buyprice * target_per or
@@ -58,13 +80,17 @@ def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRS
             # 판매가격을 설정
             if row['low'] <= buyprice * target_sellper:
 
-                sellprice = buyprice * target_sellper
+                sellprice = (int(buyprice * target_sellper / size)) * size  # 8/5 수정
 
-            elif row['high'] >= row['upper']:
-                sellprice = (int)(row['upper'] * 10) / 10.0
+            elif row['high'] >= buyprice * target_per:
+
+                if buyprice * target_per % size == 0:
+                    sellprice = (int(buyprice * target_per / size)) * size  # 8/5 수정
+                else:
+                    sellprice = (int(buyprice * target_per / size)) * size + size
 
             else:
-                sellprice = buyprice * target_per
+                sellprice = (int(row['upper'] / size)) * size  # 8/5 수정
 
 
             buy = False
@@ -72,7 +98,7 @@ def tradeStart(coinlist,df,target_per,target_sellper,target_buyRSI,target_sellRS
             if sellprice - buyprice > 0:
                 wincount += 1
 
-            print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice)
+            #print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice, "퍼센트",sellprice/buyprice)
 
     print("----------------------------------------------┐")
     print("거래 코인 : ", coinlist,"target_per:",target_per, "target_sellper:",target_sellper)
