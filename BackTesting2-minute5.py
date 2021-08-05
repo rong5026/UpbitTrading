@@ -3,6 +3,8 @@
 # 2021-08-02 수정할점 : 산가격과 판가격이 볼린저값으로 들어가서 14.1111123 이렇게 되는거 고침
 
 # 2021-08-03 수정할점 : 산가격과 판가격이 코인상관없이 소수점1자리까지 나타내는거 고쳐야함
+
+# 2021-08-04 : 산가격과 판가격을 소수점자리의 코인과 1의자리코인 등 구분, 살때는 내림해서 사고, 팔때는 단위가격만큼 반올림해서 팜 , 팔때 순서를 -1.8 손해 - 2프로 수익 - 볼린저 밴드순
 import pprint
 
 import pyupbit
@@ -14,8 +16,9 @@ from pandas import  DataFrame
 import matplotlib.pyplot as plt
 
 
+
 cnt = 9000#받아올 데이터 수
-coinlist =["KRW-DOGE"]
+coinlist =["KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
 
 setTime = "minute5"
 
@@ -31,9 +34,34 @@ setTime = "minute5"
 #
 # df= pd.concat(dfs).sort_index()
 
+
+def getsize(coinlist):
+    current = pyupbit.get_current_price(coinlist)
+
+    if current >=2000000:
+        return 1000
+    elif current>=1000000:
+        return 500
+    elif current>=500000:
+        return 100
+    elif current>=100000:
+        return 50
+    elif current>=10000:
+        return 10
+    elif current>=1000:
+        return 5
+    elif current>=100:
+        return 1
+    elif current>=10:
+        return 0.1
+    else:
+        return 0.01
+
+
 print(len(coinlist))
 for j in range(len(coinlist)):
 
+    size = getsize(coinlist[j])
     # df = pyupbit.get_ohlcv(coinlist[j],interval=setTime, count=00)
     date = None
     dfs = []
@@ -51,8 +79,6 @@ for j in range(len(coinlist)):
 
         dfs.append(df)
         time.sleep(0.05)
-
-
 
 
     # df가 DataFrame형식으로 저장되어있음
@@ -76,7 +102,6 @@ for j in range(len(coinlist)):
 
     # 총 손익
     asset = []
-    day=[]
     per = 1
 
     count = 0  # 거래횟수
@@ -92,7 +117,9 @@ for j in range(len(coinlist)):
         if row['rsi'] != None and row['low'] <= row['lower'] and buy == False:
             buy = True
             count += 1
-            buyprice =(int)(( row['lower']*100)/100.0)
+
+
+            buyprice =  (int(row['lower']/size))*size
             myasset = 0.9995 * myasset
 
 
@@ -102,13 +129,16 @@ for j in range(len(coinlist)):
 
             if  row['low'] <= buyprice * target_sellper:
 
-                sellprice = buyprice * target_sellper
+                sellprice =  (int(buyprice * target_sellper / size)) * size  # 8/5 수정
 
-            elif row['high'] >= row['upper']:
-                sellprice = (int)((row['upper']*100)/100.0)
+            elif row['high'] >= buyprice * target_per:
+
+                sellprice = (int(buyprice * target_per / size)) * size  # 8/5 수정
+
 
             else:
-                sellprice = buyprice * target_per
+                sellprice = (int(row['upper'] / size)) * size + size  # 8/5 수정
+
 
             myasset = myasset * (1 + (sellprice - buyprice) / buyprice)
             myasset -= myasset * 0.0005
@@ -120,7 +150,7 @@ for j in range(len(coinlist)):
             if sellprice - buyprice > 0:
                 wincount += 1
 
-            print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice, "팔때 볼린저",row['upper'])
+            #print("Num:", count, "산가격 : ", buyprice, "판가격 : ", sellprice, "퍼센트",sellprice/buyprice)
 
 
     print("----------------------------------------------┐")
@@ -138,7 +168,7 @@ for j in range(len(coinlist)):
     # plt.plot(x_values)
     # plt.show()
 
-    df.to_excel(coinlist[j]+".xlsx")
+    #df.to_excel(coinlist[j]+".xlsx")
 
 
 
