@@ -10,6 +10,7 @@
 
 #7-27 추가 -> 호가창에서 물량이 사고자하거나 팔고자하는 만큼 남아있는지 확인 후 매수,매도
 
+#8-05 추가 -> 매수주문이 들어가는 즉시 목표가격에 지정가주문을 걸고 만약 팔아야하는 시점이 오면 지정가 주문이 채결이 안되어있다면 취소하고 판매
 import pyupbit
 import time
 import talib
@@ -22,12 +23,32 @@ access_key = "bRRqsFuM83Gy3xV3gaFP6cJbDFvkKxL5uIE10lUh"
 secret_key = "0LWSzW60DFFB7o3bB8wDuvHvVUgZznkRdsX8JgFv"
 
 ticker = "KRW-XEM"
-coinlist = ["KRW-XEM", "KRW-SC", "KRW-MLK", "KRW-UPP", "KRW-BORA"]
+coinlist =["KRW-ADA","KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
 buy = False
 
 upbit = pyupbit.Upbit(access_key, secret_key)
 
+def getsize(coinlist):
+    current = pyupbit.get_current_price(coinlist)
 
+    if current >=2000000:
+        return 1000
+    elif current>=1000000:
+        return 500
+    elif current>=500000:
+        return 100
+    elif current>=100000:
+        return 50
+    elif current>=10000:
+        return 10
+    elif current>=1000:
+        return 5
+    elif current>=100:
+        return 1
+    elif current>=10:
+        return 0.1
+    else:
+        return 0.01
 def findTicker(coinlist):
     krw = upbit.get_balance("KRW")
     while True:
@@ -35,9 +56,7 @@ def findTicker(coinlist):
         for i in range(len(coinlist)):
             df = pyupbit.get_ohlcv(coinlist[i], interval="minute5")
 
-            upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
-            df['upper'] = upper
-            df['middle'] = middle
+            lower = talib.BBANDS(df['close'], 20, 2)
             df['lower'] = lower
             Df = df.iloc[-1]
 
@@ -66,11 +85,15 @@ else:
     buy_price = float(balance[0][1]['avg_buy_price'])
     ticker = "KRW-" + balance[0][1]['currency']
     print("Trading Situation : ", buy)
-    print("COin Name :", ticker)
+    print("Coin Name :", ticker)
     print("Coin Price : ", buy_price)
     print("Coin balance :", float(balance[0][1]['balance']))
 
 print()
+
+
+target_per = 1.01
+target_sellper = 0.99
 
 while True:
     krw = upbit.get_balance("KRW")  # 잔고A
@@ -92,9 +115,24 @@ while True:
             print("Coin Name : ", ticker, "Buy Price : ", buy_price)
             buy = True
 
+            size = getsize(ticker)
+            price = (int(buy_price*target_per)/size) *size
+
+            if price < buy_price*target_per:
+                price +=size
+
+            sell = upbit.sell_limit_order(coinlist, price, (krw * 0.9995)/price)   # limitorder . price , count
+
+            print("@@@ LIMIT SEll ORDER @@@")
+            print("Coin Name : ",ticker, "Limit Sell Price :",price )
+            print("uuid :",sell[0]['uuid'])
+
+
         else:
+
+
             df = pyupbit.get_ohlcv(ticker, interval="minute5")  # B
-            upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
+            upper = talib.BBANDS(df['close'], 20, 2)
             df['upper'] = upper
             Df = df.iloc[-1]
 
@@ -102,12 +140,18 @@ while True:
 
             current_bidprice = orderbook[0]['orderbook_units'][0]['bid_price']
 
-            if (current_bidprice <= (buy_price * 0.982) or
-                current_bidprice >= (buy_price * 1.02) or
-                current_bidprice >= Df['upper']) and buy == True and orderbook[0]['orderbook_units'][0][
-                'bid_size'] >= upbit.get_balance(ticker):
-                sell_result = upbit.sell_market_order(ticker, upbit.get_balance(ticker))
+            if upbit.get_balance("KRW") >= 5000:
+                buy = False
+                print("Limit Order Complete!!")
+
+            elif (current_bidprice <= (buy_price * target_sellper) or current_bidprice >= Df['upper']) and buy == True and  orderbook[0]['orderbook_units'][0]['bid_size'] >= upbit.get_balance(ticker):
+
+                #limi order cancel
+                print("Limit Order Cancel!!!")
+                upbit.cancel_order(sell[0]['uuid'])
+
                 # A
+                sell_result = upbit.sell_market_order(ticker, upbit.get_balance(ticker))
                 print("@@@ Sell Order @@@")
                 print("Present Price :", current_bidprice, "Bollinger Upper :", Df['upper'])
                 time.sleep(0.01)
@@ -117,6 +161,8 @@ while True:
                 buy = False
                 print("My Balance : ", upbit.get_balance("KRW"))
                 # A
+
+
         time.sleep(0.05)
 
     except Exception as e:
