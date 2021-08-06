@@ -121,7 +121,9 @@ while True:
             if price < buy_price*target_per:
                 price +=size
 
-            sell = upbit.sell_limit_order(coinlist, price, balance[0][1]['locked'])   # limitorder . price , count
+            sell = upbit.sell_limit_order(coinlist, price, balance[0][1]['balance'])   # limitorder . price , count
+
+            time.sleep(1)
 
             print("@@@ LIMIT SEll ORDER @@@")
             print("Coin Name : ",ticker)
