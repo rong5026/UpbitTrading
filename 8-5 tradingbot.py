@@ -116,7 +116,7 @@ while True:
             buy = True
 
             size = getsize(ticker)
-            price = (int(buy_price*target_per)/size) *size
+            price = int((buy_price*target_per)/size) *size  # 8/7 오류 수정
 
             if price < buy_price*target_per:
                 price +=size
