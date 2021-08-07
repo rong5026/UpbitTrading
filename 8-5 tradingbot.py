@@ -11,6 +11,8 @@
 #7-27 추가 -> 호가창에서 물량이 사고자하거나 팔고자하는 만큼 남아있는지 확인 후 매수,매도
 
 #8-05 추가 -> 매수주문이 들어가는 즉시 목표가격에 지정가주문을 걸고 만약 팔아야하는 시점이 오면 지정가 주문이 채결이 안되어있다면 취소하고 판매
+
+#8-07 추가 -> 매도를 했다면 coin_rebuy에 매도된 가격을 넣고 다음 주문에서 매도한가격보다 낮을때만 매수하도록 변경
 import pyupbit
 import time
 import talib
@@ -24,6 +26,8 @@ secret_key = "0LWSzW60DFFB7o3bB8wDuvHvVUgZznkRdsX8JgFv"
 
 ticker = "KRW-XEM"
 coinlist =["KRW-ADA","KRW-XEM","KRW-SC","KRW-MLK","KRW-UPP","KRW-BORA"]
+
+coin_rebuy = [0 for i in range(len(coinlist))] # 매도한 후 매도가격보다 낮으면 다시 매수가능
 buy = False
 
 upbit = pyupbit.Upbit(access_key, secret_key)
@@ -54,20 +58,24 @@ def findTicker(coinlist):
     while True:
 
         for i in range(len(coinlist)):
-            df = pyupbit.get_ohlcv(coinlist[i], interval="minute5")
-
-            upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
-            df['lower'] = lower
-            Df = df.iloc[-1]
 
             orderbook = pyupbit.get_orderbook(tickers=coinlist[i])
-
             current_price = orderbook[0]['orderbook_units'][0]['ask_price']
 
-            if current_price < Df['lower'] and orderbook[0]['orderbook_units'][0]['ask_size'] >= krw / current_price:
-                return coinlist[i]
+            if coin_rebuy[i] !=0 and coin_rebuy[i] > current_price:
+                df = pyupbit.get_ohlcv(coinlist[i], interval="minute5")
+                upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
+                df['lower'] = lower
+                Df = df.iloc[-1]
+
+                if current_price < Df['lower'] and orderbook[0]['orderbook_units'][0][
+                    'ask_size'] >= krw / current_price:
+
+                    return coinlist[i]
 
             time.sleep(0.05)
+
+
 
 
 now = datetime.datetime.now()
@@ -95,6 +103,7 @@ print()
 target_per = 1.01
 target_sellper = 0.982
 
+
 while True:
     krw = upbit.get_balance("KRW")  # 잔고A
     try:
@@ -103,6 +112,8 @@ while True:
             ticker = findTicker(coinlist)
 
             buy_result = upbit.buy_market_order(ticker, upbit.get_balance("KRW") * 0.9995)  # B
+
+
             print("Coin Founded!")
             print()
 
@@ -123,6 +134,8 @@ while True:
 
             sell = upbit.sell_limit_order(coinlist, price, float(balance[0][1]['balance']))   # limitorder . price , count , 8/7 오류 수정
 
+
+            coin_rebuy = [0 for i in range(len(coinlist))] # 8/7 추가 coin_rebuy리스트 초기화
             time.sleep(1)
 
             print("@@@ LIMIT SEll ORDER @@@")
@@ -166,6 +179,11 @@ while True:
                 buy = False
                 print("My Balance : ", upbit.get_balance("KRW"))
                 # A
+
+                for i in range(len(coinlist)):
+                    if coinlist[i]==ticker:
+                        coin_rebuy[i] = float(upbit.get_order(upbit.get_order(ticker, state="done")[0]['uuid'])['trades'][0]['price']) # 8/7 추가
+
 
 
         time.sleep(0.05)
