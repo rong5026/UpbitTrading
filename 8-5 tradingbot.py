@@ -121,7 +121,7 @@ while True:
             if price < buy_price*target_per:
                 price +=size
 
-            sell = upbit.sell_limit_order(coinlist, price, balance[0][1]['balance'])   # limitorder . price , count
+            sell = upbit.sell_limit_order(coinlist, price, float(balance[0][1]['balance']))   # limitorder . price , count , 8/7 오류 수정
 
             time.sleep(1)
 
