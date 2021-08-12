@@ -13,6 +13,8 @@
 #8-05 추가 -> 매수주문이 들어가는 즉시 목표가격에 지정가주문을 걸고 만약 팔아야하는 시점이 오면 지정가 주문이 채결이 안되어있다면 취소하고 판매
 
 #8-07 추가 -> 매도를 했다면 coin_rebuy에 매도된 가격을 넣고 다음 주문에서 매도한가격보다 낮을때만 매수하도록 변경
+
+#8-12 추가 -> 텔레그렘 봇을 이용하여 거래 내용을 텔레그램으로 정보 받기
 import pyupbit
 import time
 import talib
@@ -20,6 +22,7 @@ import talib
 import datetime
 import pprint
 import datetime
+import telegram
 
 access_key = "bRRqsFuM83Gy3xV3gaFP6cJbDFvkKxL5uIE10lUh"
 secret_key = "0LWSzW60DFFB7o3bB8wDuvHvVUgZznkRdsX8JgFv"
@@ -58,21 +61,18 @@ def findTicker(coinlist):
     while True:
 
         for i in range(len(coinlist)):
+            df = pyupbit.get_ohlcv(coinlist[i], interval="minute5")
+            upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
+            df['lower'] = lower
+            Df = df.iloc[-1]
 
             orderbook = pyupbit.get_orderbook(tickers=coinlist[i])
             current_price = orderbook[0]['orderbook_units'][0]['ask_price']
+            if coin_rebuy[i] ==0 or coin_rebuy[i] > current_price:  #8/8 오류수정
 
-            if coin_rebuy[i] !=0 and coin_rebuy[i] > current_price:
-                df = pyupbit.get_ohlcv(coinlist[i], interval="minute5")
-                upper, middle, lower = talib.BBANDS(df['close'], 20, 2)
-                df['lower'] = lower
-                Df = df.iloc[-1]
-
-                if current_price < Df['lower'] and orderbook[0]['orderbook_units'][0][
-                    'ask_size'] >= krw / current_price:
-
+                if current_price < Df['lower'] and orderbook[0]['orderbook_units'][0]['ask_size'] >= krw / current_price:
                     return coinlist[i]
-
+            #print(coinlist[i])
             time.sleep(0.05)
 
 
@@ -103,6 +103,10 @@ print()
 target_per = 1.01
 target_sellper = 0.982
 
+telegram_token = "1933596461:AAHAMmGniaCtEUUSdgKYrWnrlsFpXz8-nHo"
+telegram_chat_id = 1665697222
+bot = telegram.Bot(token = telegram_token)
+
 
 while True:
     krw = upbit.get_balance("KRW")  # 잔고A
@@ -113,6 +117,8 @@ while True:
 
             buy_result = upbit.buy_market_order(ticker, upbit.get_balance("KRW") * 0.9995)  # B
 
+            bot.sendMessage(chat_id=telegram_chat_id, text="[Buy_Result]")
+            bot.sendMessage(chat_id=telegram_chat_id, text=buy_result)
 
             print("Coin Founded!")
             print()
@@ -132,16 +138,18 @@ while True:
             if price < buy_price*target_per:
                 price +=size
 
-            sell = upbit.sell_limit_order(coinlist, price, float(balance[0][1]['balance']))   # limitorder . price , count , 8/7 오류 수정
 
-
+            sell = upbit.sell_limit_order(ticker, price, upbit.get_balance(ticker))   # limitorder . price , count , 8/8 오류 수정
+            bot.sendMessage(chat_id=telegram_chat_id, text="[Limit_Sell]")
+            bot.sendMessage(chat_id=telegram_chat_id, text=sell)
             coin_rebuy = [0 for i in range(len(coinlist))] # 8/7 추가 coin_rebuy리스트 초기화
             time.sleep(1)
 
             print("@@@ LIMIT SEll ORDER @@@")
-            print("Coin Name : ",ticker)
+            print("Coin Name : ", ticker)
             print("Limit Sell Price :",price )
-            print("uuid :",sell[0]['uuid'])
+            pprint.pprint(sell)
+            print("-----------------------------------")
 
 
         else:
@@ -158,6 +166,11 @@ while True:
                 buy = False
                 print("Limit Order Complete!!")
                 print()
+                time.sleep(0.5)
+                for i in range(len(coinlist)):
+                    if coinlist[i] == ticker:
+                        m=upbit.get_order(ticker, state="done")[0]['uuid']
+                        coin_rebuy[i] = float(upbit.get_order(m)['trades'][0]['price'])
 
             elif (current_bidprice <= (buy_price * target_sellper) or
                   current_bidprice >= Df['upper']) and buy == True and orderbook[0]['orderbook_units'][0]['bid_size'] >= upbit.get_balance(ticker):
@@ -172,17 +185,20 @@ while True:
                 sell_result = upbit.sell_market_order(ticker, upbit.get_balance(ticker))
                 print("@@@ Sell Order @@@")
                 print("Present Price :", current_bidprice, "Bollinger Upper :", Df['upper'])
-                time.sleep(0.01)
+                bot.sendMessage(chat_id=telegram_chat_id, text="[Sell_Result]")
+                bot.sendMessage(chat_id=telegram_chat_id, text=sell_result)
+
                 pprint.pprint(sell_result)
 
-                time.sleep(0.5)
+                time.sleep(1)
                 buy = False
                 print("My Balance : ", upbit.get_balance("KRW"))
                 # A
 
                 for i in range(len(coinlist)):
                     if coinlist[i]==ticker:
-                        coin_rebuy[i] = float(upbit.get_order(upbit.get_order(ticker, state="done")[0]['uuid'])['trades'][0]['price']) # 8/7 추가
+                        m = upbit.get_order(ticker, state="done")[0]['uuid']
+                        coin_rebuy[i] = float(upbit.get_order(m)['trades'][0]['price']) # 8/7 추가
 
 
 
